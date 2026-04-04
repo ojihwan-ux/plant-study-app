@@ -206,7 +206,8 @@ export default function App() {
 
   // --- 시트 1 로직 ---
   useEffect(() => {
-    setQuestions([...quizData]);
+    const shuffled = [...quizData].sort(() => Math.random() - 0.5);
+    setQuestions(shuffled);
   }, []);
 
   const handleQuizSubmit = () => {
