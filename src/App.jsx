@@ -123,8 +123,8 @@ export default function App() {
   const initialReportData = {
     grade: '', date: '', teacherFeedback: '',
     environment: { soil: '', wind: '', temp: '', humus: '', organisms: '', sunlight: '' },
-    plantA: { image: '', leafColor: '', leafVein: '', leafShape: '', stemColor: '', stemForm: '', features: '' },
-    plantB: { image: '', leafColor: '', leafVein: '', leafShape: '', stemColor: '', stemForm: '', features: '' },
+    plantA: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '' },
+    plantB: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '' },
     commonalities: '', differences: ''
   };
   const [reportData, setReportData] = useState(initialReportData);
@@ -443,40 +443,81 @@ export default function App() {
               </section>
 
               <section>
-                <h3 className="text-2xl font-black text-gray-800 mb-8 border-b-8 border-green-400 pb-2 inline-block">2. 생물 요소 비교 분석</h3>
+                <h3 className="text-2xl font-black text-gray-800 mb-8 border-b-8 border-green-400 pb-2 inline-block">2. 생물 요소 (식물) 관찰 및 비교</h3>
                 <div className="overflow-x-auto rounded-[2rem] border-4 border-gray-200 shadow-xl bg-white">
                   <table className="w-full table-fixed min-w-[800px] text-base">
                     <thead>
-                      <tr className="bg-gray-50"><th className="p-6 w-1/5 border-r-2 border-b-4 border-gray-200">항목</th><th className="p-6 w-2/5 border-r-2 border-b-4 border-gray-200 text-green-700 font-black text-2xl italic">식물 (가)</th><th className="p-6 w-2/5 border-b-4 border-gray-200 text-blue-700 font-black text-2xl italic">식물 (나)</th></tr>
+                      <tr className="bg-gray-50">
+                        <th className="p-4 w-[80px] border-r-2 border-b-4 border-gray-200 text-sm">분류 기준</th>
+                        <th className="p-4 w-[80px] border-r-2 border-b-4 border-gray-200 text-sm"></th>
+                        <th className="p-4 border-r-2 border-b-4 border-gray-200 text-green-700 font-black text-xl italic">식물 (가)</th>
+                        <th className="p-4 border-b-4 border-gray-200 text-blue-700 font-black text-xl italic">식물 (나)</th>
+                      </tr>
                     </thead>
-                    <tbody className="divide-y-2 divide-gray-100">
+                    <tbody className="divide-y divide-gray-100">
+                      {/* 전체 모습 - 그림장 */}
                       <tr>
-                        <td className="p-6 bg-gray-50 font-black text-center border-r-2">관찰 드로잉</td>
+                        <td className="p-4 bg-gray-50 font-black text-center border-r-2 text-sm" rowSpan={1}>전체 모습<br/><span className="text-[10px] text-gray-400 font-normal">(클릭하여 그리기)</span></td>
+                        <td className="p-4 bg-gray-50 border-r-2"></td>
                         <td onClick={() => openDrawing('plantA')} className="p-0 border-r-2 cursor-pointer hover:bg-green-50">
-                          <div className="h-64 w-full flex items-center justify-center bg-white p-2">
-                            {reportData.plantA.image ? <img src={reportData.plantA.image} className="max-h-full object-contain" /> : <PenTool className="text-gray-100" size={64}/>}
+                          <div className="h-48 w-full flex flex-col items-center justify-center bg-white p-2">
+                            {reportData.plantA.image ? <img src={reportData.plantA.image} className="max-h-full object-contain" /> : <><PenTool className="text-gray-200" size={40}/><span className="text-gray-300 text-sm mt-2 font-bold">그림장 열기</span></>}
                           </div>
                         </td>
                         <td onClick={() => openDrawing('plantB')} className="p-0 cursor-pointer hover:bg-blue-50">
-                          <div className="h-64 w-full flex items-center justify-center bg-white p-2">
-                            {reportData.plantB.image ? <img src={reportData.plantB.image} className="max-h-full object-contain" /> : <PenTool className="text-gray-100" size={64}/>}
+                          <div className="h-48 w-full flex flex-col items-center justify-center bg-white p-2">
+                            {reportData.plantB.image ? <img src={reportData.plantB.image} className="max-h-full object-contain" /> : <><PenTool className="text-gray-200" size={40}/><span className="text-gray-300 text-sm mt-2 font-bold">그림장 열기</span></>}
                           </div>
                         </td>
                       </tr>
-                      {['잎 색상', '잎맥', '잎 모양', '줄기 색상', '줄기 형태'].map((label, idx) => {
-                        const fields = ['leafColor', 'leafVein', 'leafShape', 'stemColor', 'stemForm'];
-                        return (
-                          <tr key={label}>
-                            <td className="p-6 bg-gray-50 font-black text-center border-r-2">{label}</td>
-                            <td className="p-0 border-r-2"><input className="w-full p-6 outline-none focus:bg-yellow-50 font-bold text-lg text-center bg-white" value={reportData.plantA[fields[idx]]} onChange={e => handleReportChange('plantA', fields[idx], e.target.value)} /></td>
-                            <td className="p-0"><input className="w-full p-6 outline-none focus:bg-yellow-50 font-bold text-lg text-center bg-white" value={reportData.plantB[fields[idx]]} onChange={e => handleReportChange('plantB', fields[idx], e.target.value)} /></td>
-                          </tr>
-                        );
-                      })}
+                      {/* 잎 관련 7항목 */}
+                      {[
+                        ['색상', 'leafColor'],
+                        ['잎맥', 'leafVein'],
+                        ['잎차례', 'leafArrangement'],
+                        ['모양', 'leafShape'],
+                        ['크기', 'leafSize'],
+                        ['가장자리', 'leafEdge'],
+                        ['촉감/털', 'leafTexture'],
+                      ].map(([label, field], idx) => (
+                        <tr key={field}>
+                          {idx === 0 && <td className="p-4 bg-green-50 font-black text-center border-r-2 text-sm align-middle" rowSpan={7}>잎</td>}
+                          <td className="p-3 bg-gray-50 text-center border-r-2 text-sm font-bold text-gray-600">{label}</td>
+                          <td className="p-0 border-r-2"><input className="w-full p-4 outline-none focus:bg-yellow-50 font-bold text-center bg-white" value={reportData.plantA[field]} onChange={e => handleReportChange('plantA', field, e.target.value)} /></td>
+                          <td className="p-0"><input className="w-full p-4 outline-none focus:bg-yellow-50 font-bold text-center bg-white" value={reportData.plantB[field]} onChange={e => handleReportChange('plantB', field, e.target.value)} /></td>
+                        </tr>
+                      ))}
+                      {/* 줄기 관련 5항목 */}
+                      {[
+                        ['색상', 'stemColor'],
+                        ['형태', 'stemForm'],
+                        ['거칠기/질김', 'stemRoughness'],
+                        ['굵기/두께', 'stemThickness'],
+                        ['길이', 'stemLength'],
+                      ].map(([label, field], idx) => (
+                        <tr key={field}>
+                          {idx === 0 && <td className="p-4 bg-blue-50 font-black text-center border-r-2 text-sm align-middle" rowSpan={5}>줄기</td>}
+                          <td className="p-3 bg-gray-50 text-center border-r-2 text-sm font-bold text-gray-600">{label}</td>
+                          <td className="p-0 border-r-2"><input className="w-full p-4 outline-none focus:bg-yellow-50 font-bold text-center bg-white" value={reportData.plantA[field]} onChange={e => handleReportChange('plantA', field, e.target.value)} /></td>
+                          <td className="p-0"><input className="w-full p-4 outline-none focus:bg-yellow-50 font-bold text-center bg-white" value={reportData.plantB[field]} onChange={e => handleReportChange('plantB', field, e.target.value)} /></td>
+                        </tr>
+                      ))}
+                      {/* 종합 특징 */}
                       <tr>
-                        <td className="p-6 bg-gray-50 font-black text-center border-r-2 align-middle">핵심 적응 사례</td>
-                        <td className="p-0 border-r-2"><textarea className="w-full p-6 h-40 outline-none focus:bg-yellow-50 font-bold text-lg leading-relaxed resize-none bg-white" value={reportData.plantA.features} onChange={e => handleReportChange('plantA', 'features', e.target.value)} /></td>
-                        <td className="p-0"><textarea className="w-full p-6 h-40 outline-none focus:bg-yellow-50 font-bold text-lg leading-relaxed resize-none bg-white" value={reportData.plantB.features} onChange={e => handleReportChange('plantB', 'features', e.target.value)} /></td>
+                        <td className="p-4 bg-yellow-50 font-black text-center border-r-2 text-sm align-middle" rowSpan={1}>종합 특징</td>
+                        <td className="p-3 bg-gray-50 text-center border-r-2 text-sm font-bold text-gray-600"></td>
+                        <td className="p-0 border-r-2"><textarea className="w-full p-4 h-32 outline-none focus:bg-yellow-50 font-bold leading-relaxed resize-none bg-white" placeholder="적응 사례 요약" value={reportData.plantA.features} onChange={e => handleReportChange('plantA', 'features', e.target.value)} /></td>
+                        <td className="p-0"><textarea className="w-full p-4 h-32 outline-none focus:bg-yellow-50 font-bold leading-relaxed resize-none bg-white" placeholder="적응 사례 요약" value={reportData.plantB.features} onChange={e => handleReportChange('plantB', 'features', e.target.value)} /></td>
+                      </tr>
+                      {/* 공통점 */}
+                      <tr>
+                        <td className="p-4 bg-purple-50 font-black text-center border-r-2 text-sm align-middle" colSpan={2}>공통점</td>
+                        <td className="p-0" colSpan={2}><textarea className="w-full p-4 h-24 outline-none focus:bg-yellow-50 font-bold leading-relaxed resize-none bg-white" placeholder="공통점 작성" value={reportData.commonalities} onChange={e => handleReportChange('root', 'commonalities', e.target.value)} /></td>
+                      </tr>
+                      {/* 차이점 */}
+                      <tr>
+                        <td className="p-4 bg-orange-50 font-black text-center border-r-2 text-sm align-middle" colSpan={2}>차이점</td>
+                        <td className="p-0" colSpan={2}><textarea className="w-full p-4 h-24 outline-none focus:bg-yellow-50 font-bold leading-relaxed resize-none bg-white" placeholder="차이점 작성" value={reportData.differences} onChange={e => handleReportChange('root', 'differences', e.target.value)} /></td>
                       </tr>
                     </tbody>
                   </table>
