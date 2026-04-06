@@ -123,9 +123,9 @@ export default function App() {
   const initialReportData = {
     grade: '', date: '', teacherFeedback: '',
     environment: { soil: '', wind: '', temp: '', humus: '', organisms: '', sunlight: '' },
-    plantA: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '' },
-    plantB: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '' },
-    commonalities: '', differences: ''
+    plantA: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '1. 서식 환경 특징 :\n2. 식물의 적응 형태 :\n3. 알게 된 점 :\n' },
+    plantB: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '1. 서식 환경 특징 :\n2. 식물의 적응 형태 :\n3. 알게 된 점 :\n' },
+    commonalities: '1. 잎의 공통점 :\n2. 줄기의 공통점 :\n3. 환경 적응 방식 :\n', differences: '1. 잎의 차이점 :\n2. 줄기의 차이점 :\n3. 환경 적응 방식 :\n'
   };
   const [reportData, setReportData] = useState(initialReportData);
 
@@ -222,7 +222,7 @@ export default function App() {
     }
     if (!isCorrect) {
       for (let ans of currentQ.validAnswers) {
-        if (getSimilarity(input, normalize(ans)) >= 0.75) {
+        if (getSimilarity(input, normalize(ans)) >= 0.80) {
           isCorrect = true; break;
         }
       }
@@ -232,7 +232,7 @@ export default function App() {
       setScore(prev => prev + 1);
       setFeedback({ type: 'correct', message: "정답입니다!" });
     } else {
-      setFeedback({ type: 'incorrect', message: "거의 다 왔어요! 다시 생각해 볼까요?" });
+      setFeedback({ type: 'incorrect', message: `오답입니다! 정답(예시): "${currentQ.validAnswers[0]}"` });
     }
   };
 
@@ -268,7 +268,19 @@ export default function App() {
         id: currentReportId,
         savedAt: new Date().toISOString()
       }, { merge: true });
-      setAlertModal({ isOpen: true, message: "보고서가 성공적으로 누적되었습니다!" });
+      
+      // 저장 후 새 문서를 위해 폼 초기화 및 새 ID 생성
+      const newId = generateId();
+      setCurrentReportId(newId);
+      setReportData(initialReportData);
+      try {
+        const ptrRef = doc(db, 'reports_pointers', user.uid);
+        await setDoc(ptrRef, { currentReportId: newId }, { merge: true });
+      } catch (e) {}
+      
+      await fetchAllReports(); // 대시보드 리스트 갱신
+      setActiveTab('dashboard'); // 대시보드로 이동
+      setAlertModal({ isOpen: true, message: "보고서가 성공적으로 제출되어 대시보드로 이동했습니다!" });
       setTimeout(() => setIsSaving(false), 500);
     } catch (error) {
       console.error("Save report failed:", error);
@@ -278,6 +290,21 @@ export default function App() {
   };
 
   const confirmClear = async () => {
+    if (user && currentReportId) {
+      try {
+        const docRef = doc(db, 'reports', currentReportId);
+        await setDoc(docRef, {
+          ...reportData,
+          uid: user.uid,
+          id: currentReportId,
+          savedAt: new Date().toISOString()
+        }, { merge: true });
+        await fetchAllReports();
+      } catch (e) {
+        console.error("Save before clear failed:", e);
+      }
+    }
+
     setReportData(initialReportData);
     setIsClearModalOpen(false);
     const newId = generateId();
@@ -290,6 +317,31 @@ export default function App() {
       } catch (e) {
         console.error("Clear failed:", e);
       }
+    }
+  };
+
+  const tempSaveReport = async () => {
+    if (!user || !currentReportId) {
+      setAlertModal({ isOpen: true, message: "저장할 수 없습니다. 다시 접속해 주세요." });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const docRef = doc(db, 'reports', currentReportId);
+      await setDoc(docRef, {
+        ...reportData,
+        uid: user.uid,
+        id: currentReportId,
+        savedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      await fetchAllReports();
+      setAlertModal({ isOpen: true, message: "보고서가 성공적으로 중간 저장되었습니다!" });
+      setTimeout(() => setIsSaving(false), 500);
+    } catch (error) {
+      console.error("Temp save failed:", error);
+      setIsSaving(false);
+      setAlertModal({ isOpen: true, message: "저장 중 오류가 발생했습니다." });
     }
   };
 
@@ -403,7 +455,8 @@ export default function App() {
               <h2 className="text-3xl font-black flex items-center gap-3"><PenTool size={32}/> 탐구 보고서</h2>
               <div className="flex gap-3">
                 <button onClick={() => setIsClearModalOpen(true)} className="bg-white/10 hover:bg-white/20 border border-white/30 px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2"><Trash2 size={20}/> 새로 시작</button>
-                <button onClick={saveReport} className="bg-white text-green-700 px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 hover:bg-green-50 shadow-lg transition-all"><Save size={20}/> {isSaving ? "저장 중..." : "누적 저장하기"}</button>
+                <button onClick={tempSaveReport} className="bg-yellow-400 text-yellow-900 px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 hover:bg-yellow-300 shadow-lg transition-all"><Save size={20}/> {isSaving ? "저장 중..." : "중간 저장"}</button>
+                <button onClick={saveReport} className="bg-white text-green-700 px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 hover:bg-green-50 shadow-lg transition-all"><CheckCircle size={20}/> {isSaving ? "제출 중..." : "제출하고 대시보드로 가기"}</button>
               </div>
             </div>
 
@@ -550,17 +603,55 @@ export default function App() {
                     <textarea value={feedbackInput} onChange={e => setFeedbackInput(e.target.value)} placeholder="학생 보고서에 실시간으로 표시됩니다." className="w-full h-40 p-6 rounded-[2rem] border-4 border-indigo-200 focus:border-indigo-500 outline-none font-bold text-indigo-900 resize-none mb-6 shadow-inner text-lg bg-white" />
                     <button onClick={() => saveFeedback(selectedReport.id)} className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3 text-lg">피드백 전송 및 저장</button>
                   </header>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-[2rem] border-4 border-green-100 shadow-sm">
-                      <p className="font-black text-green-700 mb-4 text-center border-b-2 pb-2">식물 (가) 특징</p>
-                      {selectedReport.plantA?.image && <img src={selectedReport.plantA.image} className="h-48 mx-auto object-contain mb-6 bg-gray-50 rounded-xl" />}
-                      <p className="text-lg font-bold text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedReport.plantA?.features || "미작성"}</p>
+                  <div className="bg-white p-8 rounded-[2rem] border-4 border-gray-100 shadow-md mb-8">
+                    <h4 className="text-2xl font-black text-gray-800 mb-4 border-b-4 border-green-400 pb-2 inline-block">1. 환경 요소</h4>
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>토양:</strong><br/>{selectedReport.environment?.soil || "-"}</div>
+                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>바람:</strong><br/>{selectedReport.environment?.wind || "-"}</div>
+                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>온도:</strong><br/>{selectedReport.environment?.temp || "-"}</div>
+                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>부엽물:</strong><br/>{selectedReport.environment?.humus || "-"}</div>
+                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>생물:</strong><br/>{selectedReport.environment?.organisms || "-"}</div>
+                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>햇빛:</strong><br/>{selectedReport.environment?.sunlight || "-"}</div>
                     </div>
-                    <div className="bg-white p-6 rounded-[2rem] border-4 border-blue-100 shadow-sm">
-                      <p className="font-black text-blue-700 mb-4 text-center border-b-2 pb-2">식물 (나) 특징</p>
-                      {selectedReport.plantB?.image && <img src={selectedReport.plantB.image} className="h-48 mx-auto object-contain mb-6 bg-gray-50 rounded-xl" />}
-                      <p className="text-lg font-bold text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedReport.plantB?.features || "미작성"}</p>
-                    </div>
+                  </div>
+
+                  <div className="bg-white p-8 rounded-[2rem] border-4 border-gray-100 shadow-md mb-8 overflow-x-auto">
+                    <h4 className="text-2xl font-black text-gray-800 mb-4 border-b-4 border-green-400 pb-2 inline-block">2. 생물 요소 비교</h4>
+                    <table className="w-full text-sm mt-4 text-center border-collapse min-w-[600px]">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-3 border-2 border-white">항목</th>
+                          <th className="p-3 border-2 border-white text-green-700 text-lg">식물 (가)</th>
+                          <th className="p-3 border-2 border-white text-blue-700 text-lg">식물 (나)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="p-3 bg-gray-50 font-bold border-2 border-white whitespace-nowrap">전체 모습</td>
+                          <td className="p-3 border-2 border-gray-50">
+                            {selectedReport.plantA?.image ? <img src={selectedReport.plantA.image} className="h-32 mx-auto object-contain bg-white rounded-lg shadow-sm" /> : "-"}
+                          </td>
+                          <td className="p-3 border-2 border-gray-50">
+                            {selectedReport.plantB?.image ? <img src={selectedReport.plantB.image} className="h-32 mx-auto object-contain bg-white rounded-lg shadow-sm" /> : "-"}
+                          </td>
+                        </tr>
+                        {[['잎 색상', 'leafColor'], ['잎맥', 'leafVein'], ['잎차례', 'leafArrangement'], ['잎 모양', 'leafShape'], ['잎 크기', 'leafSize'], ['잎 가장자리', 'leafEdge'], ['잎 촉감/털', 'leafTexture'], ['줄기 색상', 'stemColor'], ['줄기 형태', 'stemForm'], ['줄기 질김', 'stemRoughness'], ['줄기 굵기', 'stemThickness'], ['줄기 길이', 'stemLength'], ['종합 특징', 'features']].map(([label, field]) => (
+                          <tr key={field}>
+                            <td className="p-3 bg-gray-50 font-bold border-2 border-white whitespace-nowrap">{label}</td>
+                            <td className="p-3 border-2 border-gray-50 whitespace-pre-wrap">{selectedReport.plantA?.[field] || "-"}</td>
+                            <td className="p-3 border-2 border-gray-50 whitespace-pre-wrap">{selectedReport.plantB?.[field] || "-"}</td>
+                          </tr>
+                        ))}
+                        <tr>
+                          <td className="p-3 bg-purple-50 font-bold border-2 border-white whitespace-nowrap">공통점</td>
+                          <td colSpan={2} className="p-3 border-2 border-gray-50 whitespace-pre-wrap text-left px-6">{selectedReport.commonalities || "-"}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-3 bg-orange-50 font-bold border-2 border-white whitespace-nowrap">차이점</td>
+                          <td colSpan={2} className="p-3 border-2 border-gray-50 whitespace-pre-wrap text-left px-6">{selectedReport.differences || "-"}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               ) : (
