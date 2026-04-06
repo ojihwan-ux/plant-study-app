@@ -125,15 +125,15 @@ export default function App() {
     environment: { soil: '', wind: '', temp: '', humus: '', organisms: '', sunlight: '' },
     plantA: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '1. 서식 환경 특징 :\n2. 식물의 적응 형태 :\n3. 알게 된 점 :\n' },
     plantB: { image: '', leafColor: '', leafVein: '', leafArrangement: '', leafShape: '', leafSize: '', leafEdge: '', leafTexture: '', stemColor: '', stemForm: '', stemRoughness: '', stemThickness: '', stemLength: '', features: '1. 서식 환경 특징 :\n2. 식물의 적응 형태 :\n3. 알게 된 점 :\n' },
-    commonalities: '1. 잎의 공통점 :\n2. 줄기의 공통점 :\n3. 환경 적응 방식 :\n', differences: '1. 잎의 차이점 :\n2. 줄기의 차이점 :\n3. 환경 적응 방식 :\n'
+    commonalities: '', differences: ''
   };
   const [reportData, setReportData] = useState(initialReportData);
 
-  // --- 그림장 상태 ---
   const [isDrawingModalOpen, setIsDrawingModalOpen] = useState(false);
   const [drawingTarget, setDrawingTarget] = useState(null);
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 300, height: 400 });
 
   // --- 관리자 대시보드 상태 ---
   const [allReports, setAllReports] = useState([]);
@@ -348,12 +348,18 @@ export default function App() {
   // --- 그림장 로직 ---
   const openDrawing = (target) => {
     setDrawingTarget(target);
+    const paddingX = window.innerWidth > 768 ? 64 : 16;
+    const paddingY = 160; 
+    const newWidth = window.innerWidth - paddingX;
+    const newHeight = window.innerHeight - paddingY;
+    setCanvasSize({ width: newWidth, height: newHeight });
+
     setIsDrawingModalOpen(true);
     setTimeout(() => {
       if (canvasRef.current) {
         const ctx = canvasRef.current.getContext('2d');
         ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, 300, 400);
+        ctx.fillRect(0, 0, newWidth, newHeight);
         if (reportData[target].image) {
           const img = new Image();
           img.onload = () => ctx.drawImage(img, 0, 0);
@@ -487,7 +493,7 @@ export default function App() {
                   {['soil', 'wind', 'temp', 'humus', 'organisms', 'sunlight'].map(key => (
                     <div key={key} className="bg-white rounded-2xl overflow-hidden border-4 border-gray-100 shadow-sm">
                       <div className="bg-gray-100 py-3 px-4 text-xs font-black text-gray-500 text-center">
-                        {key === 'soil' ? '토양' : key === 'wind' ? '바람' : key === 'temp' ? '온도' : key === 'humus' ? '부엽물' : key === 'organisms' ? '생물' : '햇빛'}
+                        {key === 'soil' ? '토양' : key === 'wind' ? '바람' : key === 'temp' ? '온도' : key === 'humus' ? '식물 주변' : key === 'organisms' ? '생물' : '햇빛'}
                       </div>
                       <input type="text" value={reportData.environment[key]} onChange={e => handleReportChange('environment', key, e.target.value)} className="w-full p-4 text-center text-lg outline-none focus:bg-green-50 font-bold bg-white" placeholder="입력" />
                     </div>
@@ -609,7 +615,7 @@ export default function App() {
                       <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>토양:</strong><br/>{selectedReport.environment?.soil || "-"}</div>
                       <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>바람:</strong><br/>{selectedReport.environment?.wind || "-"}</div>
                       <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>온도:</strong><br/>{selectedReport.environment?.temp || "-"}</div>
-                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>부엽물:</strong><br/>{selectedReport.environment?.humus || "-"}</div>
+                      <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>식물 주변:</strong><br/>{selectedReport.environment?.humus || "-"}</div>
                       <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>생물:</strong><br/>{selectedReport.environment?.organisms || "-"}</div>
                       <div className="bg-gray-50 p-3 rounded-xl text-center"><strong>햇빛:</strong><br/>{selectedReport.environment?.sunlight || "-"}</div>
                     </div>
@@ -664,18 +670,17 @@ export default function App() {
 
       {/* 그림장 팝업 */}
       {isDrawingModalOpen && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md">
-          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-gray-800 text-white p-6 flex justify-between items-center">
-              <span className="font-black text-xl">관찰 드로잉</span><button onClick={() => setIsDrawingModalOpen(false)} className="hover:bg-gray-700 p-2 rounded-full"><X size={28}/></button>
-            </div>
-            <div className="p-8 bg-gray-50 flex flex-col items-center">
-              <canvas ref={canvasRef} width={300} height={400} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)} onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={() => setIsDrawing(false)} className="bg-white shadow-2xl border-4 border-gray-200 cursor-crosshair rounded-[2rem] touch-none mb-8" />
-              <div className="flex gap-4 w-full">
-                <button onClick={() => { const ctx = canvasRef.current.getContext('2d'); ctx.fillStyle='white'; ctx.fillRect(0,0,300,400); }} className="flex-1 py-5 bg-gray-200 text-gray-700 font-black rounded-2xl text-lg transition-all hover:bg-gray-300">지우기</button>
-                <button onClick={saveDrawing} className="flex-1 py-5 bg-green-600 text-white font-black rounded-2xl text-lg shadow-xl hover:bg-green-700 transition-all">완료</button>
-              </div>
-            </div>
+        <div className="fixed inset-0 bg-black/95 z-50 flex flex-col backdrop-blur-sm justify-between">
+          <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md">
+            <span className="font-black text-xl ml-2">관찰 드로잉</span>
+            <button onClick={() => setIsDrawingModalOpen(false)} className="hover:bg-gray-700 p-2 rounded-full"><X size={28}/></button>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center w-full overflow-hidden p-2">
+            <canvas ref={canvasRef} width={canvasSize.width} height={canvasSize.height} onMouseDown={startDraw} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)} onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={() => setIsDrawing(false)} className="bg-white shadow-2xl cursor-crosshair rounded-xl touch-none flex-shrink-0 border-2 border-gray-700" />
+          </div>
+          <div className="p-4 bg-gray-900 flex gap-4 w-full shadow-inner pb-8 sm:pb-4">
+            <button onClick={() => { const ctx = canvasRef.current.getContext('2d'); ctx.fillStyle='white'; ctx.fillRect(0,0,canvasSize.width,canvasSize.height); }} className="flex-1 py-4 bg-gray-700 text-white font-black rounded-xl text-lg transition-all hover:bg-gray-600">지우기</button>
+            <button onClick={saveDrawing} className="flex-1 py-4 bg-green-600 text-white font-black rounded-xl text-lg shadow-xl hover:bg-green-500 transition-all">완료</button>
           </div>
         </div>
       )}
